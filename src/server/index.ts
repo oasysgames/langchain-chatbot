@@ -10,6 +10,7 @@ app.use(express.json());
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
+  console.log('Hello, TypeScript with Express!');
   res.send('Hello, TypeScript with Express!');
 });
 
