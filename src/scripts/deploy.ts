@@ -1,5 +1,6 @@
 import { Client } from 'ssh2';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
+import fs from 'fs';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -8,23 +9,31 @@ const conn = new Client();
 
 // Retrieve variables from process.env
 const remoteHost = process.env.REMOTE_HOST;
-const username = process.env.USERNAME;
-const password = process.env.PASSWORD;
-const scriptPath = process.env.SCRIPT_PATH;
+const username = process.env.REMOTE_USERNAME;
+const privateKeyPath = process.env.SSH_PRIVATE_KEY_PATH;
+const scriptPath = process.env.DEPLOY_SCRIPT_PATH;
 
-if (!remoteHost || !username || !password || !scriptPath) {
+if (!remoteHost || !username || !privateKeyPath || !scriptPath) {
   console.error('Missing environment variables. Check your .env file.');
   process.exit(1);
 }
 
+// Load the private key
+const privateKey = fs.readFileSync(privateKeyPath);
+
 conn.on('ready', () => {
-  console.log('Client :: ready');
+  console.log('Connected to remote host');
   conn.exec(`bash ${scriptPath}`, (err, stream) => {
     if (err) throw err;
+    console.log(`Executing script: ${scriptPath}`);
 
     stream
       .on('close', (code: number, signal: string) => {
-        console.log(`Stream :: close :: code: ${code}, signal: ${signal}`);
+        if (code === 0) {
+          console.log('Deployment successful!');
+        } else {
+          console.error(`Deployment failed with code ${code}, signal ${signal}`);
+        }
         conn.end();
       })
       .on('data', (data: Buffer) => {
@@ -38,8 +47,5 @@ conn.on('ready', () => {
   host: remoteHost,
   port: 22, // Default SSH port
   username: username,
-  password: password,
-  // Alternatively, use privateKey for key-based authentication:
-  // privateKey: require('fs').readFileSync('/path/to/private/key')
+  privateKey: privateKey
 });
-
