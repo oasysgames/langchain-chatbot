@@ -2,11 +2,10 @@
   "name": "langchain-chatbot",
   "type": "module",
   "version": "0.0.1",
-  "main": "index.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "deploy": "tsx src/scripts/deploy.ts",
+    "deploy": "tsx src/tasks/deploy.ts",
     "start": "tsx src/server/index.ts",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix"
