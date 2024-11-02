@@ -14,7 +14,7 @@ const privateKeyPath = process.env.SSH_PRIVATE_KEY_PATH;
 const scriptPath = process.env.DEPLOY_SCRIPT_PATH;
 
 if (!remoteHost || !username || !privateKeyPath || !scriptPath) {
-  console.error('Missing environment variables. Check your .env file.');
+  console.error('Missing environment variables. Check your .env file.'); // eslint-disable-line no-console
   process.exit(1);
 }
 
@@ -22,24 +22,24 @@ if (!remoteHost || !username || !privateKeyPath || !scriptPath) {
 const privateKey = fs.readFileSync(privateKeyPath);
 
 conn.on('ready', () => {
-  console.log('Connected to remote host');
+  console.log('Connected to remote host'); // eslint-disable-line no-console
   conn.exec(`bash ${scriptPath}`, (err, stream) => {
     if (err) throw err;
 
     stream
       .on('close', (code: number, signal: string) => {
         if (code === 0) {
-          console.log('Connection closed with success');
+          console.log('Connection closed with success'); // eslint-disable-line no-console
         } else {
-          console.error(`Connection closed with error: ${code}, signal: ${signal}`);
+          console.error(`Connection closed with error: ${code}, signal: ${signal}`); // eslint-disable-line no-console
         }
         conn.end();
       })
       .on('data', (data: Buffer) => {
-        console.log(`STDOUT: ${data.toString()}`);
+        console.log(`STDOUT: ${data.toString()}`); // eslint-disable-line no-console
       })
       .stderr.on('data', (data: Buffer) => {
-        console.error(`STDERR: ${data.toString()}`);
+        console.error(`STDERR: ${data.toString()}`); // eslint-disable-line no-console
       });
   });
 }).connect({

@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "deploy": "tsx src/scripts/deploy.ts",
-    "start": "tsx src/server/index.ts"
+    "start": "tsx src/server/index.ts",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix"
   },
   "dependencies": {
     "@langchain/community": "^0.3.6",
@@ -24,6 +26,9 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/ssh2": "^1.15.1",
+    "@typescript-eslint/eslint-plugin": "^8.12.2",
+    "@typescript-eslint/parser": "^8.12.2",
+    "eslint": "^9.14.0",
     "ssh2": "^1.16.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"
