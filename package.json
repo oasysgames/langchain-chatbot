@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
+    "deploy": "tsx src/scripts/deploy.ts",
     "start": "tsx src/server/index.ts"
   },
   "dependencies": {

@@ -25,14 +25,13 @@ conn.on('ready', () => {
   console.log('Connected to remote host');
   conn.exec(`bash ${scriptPath}`, (err, stream) => {
     if (err) throw err;
-    console.log(`Executing script: ${scriptPath}`);
 
     stream
       .on('close', (code: number, signal: string) => {
         if (code === 0) {
-          console.log('Deployment successful!');
+          console.log('Connection closed with success');
         } else {
-          console.error(`Deployment failed with code ${code}, signal ${signal}`);
+          console.error(`Connection closed with error: ${code}, signal: ${signal}`);
         }
         conn.end();
       })
