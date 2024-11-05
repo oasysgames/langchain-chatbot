@@ -31,7 +31,13 @@ class Store<T> {
    * @param unmarshal - Function to convert stored string back to chat data.
    * @param fileCloseDelay - The delay (in milliseconds) before closing a file handle after the last operation.
    */
-  constructor(storagePath: string, filePrefix: string, marshal: Marshal<T>, unmarshal: Unmarshal<T>, fileCloseDelay: number = 60000) {
+  constructor(
+    storagePath: string,
+    filePrefix: string,
+    marshal: Marshal<T>,
+    unmarshal: Unmarshal<T>,
+    fileCloseDelay: number = 60000,
+  ) {
     this.storagePath = storagePath;
     this.filePrefix = filePrefix;
     this.openFiles = new Map<string, fs.FileHandle>();
@@ -86,7 +92,9 @@ class Store<T> {
     this.openFiles.set(fileName, fileHandle);
     if (!this.chatCache.has(userID)) {
       const data = await fileHandle.readFile({ encoding: 'utf8' });
-      const histories = data.trim() ? data.trim().split('\n').map(this.unmarshal) : [];
+      const histories = data.trim()
+        ? data.trim().split('\n').map(this.unmarshal)
+        : [];
       this.chatCache.set(userID, histories);
     }
     return fileHandle;
@@ -146,8 +154,8 @@ class Store<T> {
         }
       }
     } finally {
-        release();
-        this.mutexes.delete(userID);
+      release();
+      this.mutexes.delete(userID);
     }
   }
 
