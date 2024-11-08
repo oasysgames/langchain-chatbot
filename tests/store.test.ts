@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { expect } from 'chai';
-import Store from '../src/store';
+import Store from '../src/store.ts';
 import { describe, it, before, after } from 'mocha';
 
 interface ChatHistory {

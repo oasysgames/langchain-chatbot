@@ -1,5 +1,5 @@
-import '../common/env';
-import logger from '../common/log';
+import './common/env';
+import logger from './common/log';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Mutex } from 'async-mutex';
@@ -51,7 +51,7 @@ class Store<T> {
 
     // Create the storage directory if it does not exist
     fs.mkdir(this.storagePath, { recursive: true }).catch((err) => {
-      logger.error('Error creating storage directory:', err);
+      logger.error(err, 'Error creating storage directory');
     });
   }
 
@@ -135,7 +135,7 @@ class Store<T> {
             await fileHandle.write(updates.map(this.marshal).join('\n') + '\n');
             this.chatUpdates.delete(userID);
           } catch (err) {
-            logger.error('Error flushing chat updates:', err);
+            logger.error(err, 'Error flushing chat updates');
           }
         }
       }
@@ -145,7 +145,7 @@ class Store<T> {
         try {
           await this.openFiles.get(fileName)!.close();
         } catch (err) {
-          logger.error('Error closing file:', err);
+          logger.error(err, 'Error closing file');
         } finally {
           this.openFiles.delete(fileName);
           clearTimeout(this.fileTimers.get(fileName));

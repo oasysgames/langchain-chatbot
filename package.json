@@ -19,6 +19,7 @@
     "@langchain/textsplitters": "^0.1.0",
     "@pinecone-database/pinecone": "^3.0.3",
     "async-mutex": "^0.5.0",
+    "commander": "^12.1.0",
     "discord-interactions": "^4.1.0",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
