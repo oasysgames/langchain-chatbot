@@ -1,6 +1,16 @@
 import { Mutex } from 'async-mutex';
 
 /**
+ * Custom error thrown when a mutex is already locked.
+ */
+export class MutexLockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MutexLockedError';
+  }
+}
+
+/**
  * A simple Mutex manager to handle user-specific locks.
  */
 export class MutexManager {
@@ -32,5 +42,3 @@ export class MutexManager {
     }
   }
 }
-
-export default MutexManager;

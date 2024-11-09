@@ -1,7 +1,7 @@
 import logger from './common/log';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import MutexManager from './common/mutex';
+import { MutexManager}  from './common/mutex';
 
 type Marshal<T> = (data: T) => string;
 type Unmarshal<T> = (data: string) => T;
