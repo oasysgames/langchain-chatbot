@@ -134,3 +134,9 @@ dist
 
 # Memo
 note.md
+
+# Local Default Storage
+localstorage
+
+# Temporary Files
+tmp
