@@ -1,8 +1,7 @@
-import './common/env';
 import logger from './common/log';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Mutex } from 'async-mutex';
+import MutexManager from './common/mutex';
 
 type Marshal<T> = (data: T) => string;
 type Unmarshal<T> = (data: string) => T;
@@ -11,14 +10,13 @@ type Unmarshal<T> = (data: string) => T;
  * A generic store to manage chat history for users.
  * @template T - The type of the chat history.
  */
-class Store<T> {
+export class Store<T> extends MutexManager {
   private storagePath: string;
   private filePrefix: string;
   private openFiles: Map<string, fs.FileHandle>;
   private fileTimers: Map<string, NodeJS.Timeout>;
   private chatCache: Map<string, T[]>;
   private chatUpdates: Map<string, T[]>;
-  private mutexes: Map<string, Mutex>;
   private marshal: Marshal<T>;
   private unmarshal: Unmarshal<T>;
   private fileCloseDelay: number;
@@ -38,13 +36,13 @@ class Store<T> {
     unmarshal: Unmarshal<T>,
     fileCloseDelay: number = 60000,
   ) {
+    super();
     this.storagePath = storagePath;
     this.filePrefix = filePrefix;
     this.openFiles = new Map<string, fs.FileHandle>();
     this.fileTimers = new Map<string, NodeJS.Timeout>();
     this.chatCache = new Map<string, T[]>();
     this.chatUpdates = new Map<string, T[]>();
-    this.mutexes = new Map<string, Mutex>();
     this.marshal = marshal;
     this.unmarshal = unmarshal;
     this.fileCloseDelay = fileCloseDelay;
@@ -62,18 +60,6 @@ class Store<T> {
    */
   private getFileName(userID: string): string {
     return path.join(this.storagePath, `${userID}${this.filePrefix}`);
-  }
-
-  /**
-   * Gets or creates a mutex for a specific user.
-   * @param userID - The ID of the user.
-   * @returns The mutex for the user's operations.
-   */
-  private getMutex(userID: string): Mutex {
-    if (!this.mutexes.has(userID)) {
-      this.mutexes.set(userID, new Mutex());
-    }
-    return this.mutexes.get(userID)!;
   }
 
   /**
@@ -155,7 +141,7 @@ class Store<T> {
       }
     } finally {
       release();
-      this.mutexes.delete(userID);
+      this.deleteMutex(userID);
     }
   }
 
