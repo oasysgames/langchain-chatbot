@@ -1,5 +1,4 @@
-import '../common/env';
-import logger from '../common/log';
+import logger from '../common/log'; // Load environment variables from .env file
 import { Client } from 'ssh2';
 import fs from 'fs';
 

@@ -1,5 +1,4 @@
-import '../common/env';
-import logger from '../common/log';
+import logger from '../common/log'; // Load environment variables from .env file
 import { Command } from 'commander';
 import { assertIsNumber } from '../common/utils';
 import { LangChainUtils } from '../langchain';
