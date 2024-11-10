@@ -1,7 +1,7 @@
 import logger from './common/log';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { MutexManager}  from './common/mutex';
+import { MutexManager } from './common/mutex';
 
 type Marshal<T> = (data: T) => string;
 type Unmarshal<T> = (data: string) => T;
@@ -59,7 +59,23 @@ export class Store<T> extends MutexManager {
    * @returns The full file path for the user's chat history.
    */
   private getFileName(userID: string): string {
-    return path.join(this.storagePath, `${userID}${this.filePrefix}`);
+    return path.join(this.storagePath, `${this.filePrefix}${userID}.txt`);
+  }
+
+  /**
+   * Extracts the user ID from a file name.
+   * @param fileName - The file name to extract the user ID from.
+   * @returns The user ID extracted from the file name.
+   */
+  private getUserIdFromFileName(fileName: string): string {
+    // Extract the base name of the file (without the path)
+    const baseName = path.basename(fileName, '.txt');
+    // Ensure the file name starts with the prefix
+    if (!baseName.startsWith(this.filePrefix)) {
+      throw new Error('Invalid file name');
+    }
+    // Remove the prefix to get the userID
+    return baseName.slice(this.filePrefix.length);
   }
 
   /**
@@ -106,7 +122,7 @@ export class Store<T> extends MutexManager {
    * @param fileName - The file name to flush and close.
    */
   private async flushAndCloseFile(fileName: string): Promise<void> {
-    const userID = path.basename(fileName, this.filePrefix);
+    const userID = this.getUserIdFromFileName(fileName);
     const mutex = this.getMutex(userID);
 
     // Wait for any read/wirte operation to finish
@@ -118,7 +134,8 @@ export class Store<T> extends MutexManager {
         if (updates.length > 0) {
           try {
             const fileHandle = await this.getFileHandle(userID);
-            await fileHandle.write(updates.map(this.marshal).join('\n') + '\n');
+            const contents = updates.map(this.marshal).join('\n') + '\n';
+            await fileHandle.write(contents, undefined, 'utf8');
             this.chatUpdates.delete(userID);
           } catch (err) {
             logger.error(err, 'Error flushing chat updates');
@@ -212,14 +229,19 @@ export class Store<T> extends MutexManager {
     }
     return histories;
   }
+
+  /**
+   * Closes all open file handles and clears the cache.
+   * @returns A promise that resolves when all file handles are closed
+   */
+  public async close(): Promise<void> {
+    // Close all open files
+    for (const [fileName] of this.openFiles) {
+      if (this.fileTimers.has(fileName)) {
+        await this.flushAndCloseFile(fileName);
+      }
+    }
+  }
 }
 
 export default Store;
-
-// Example usage:
-// const marshal = (data: string) => data;
-// const unmarshal = (data: string) => data;
-// const store = new Store<string>('./chat_data', '_chats.txt', marshal, unmarshal, 120000);
-// store.recordChat('user1', 'Hello, how are you?');
-// store.recordChat('user1', 'What's up?');
-// store.getChatHistory('user1').then(console.log).catch(console.error);

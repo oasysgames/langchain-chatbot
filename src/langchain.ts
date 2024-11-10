@@ -1,21 +1,33 @@
-import './common/env';
 import logger from './common/log';
 import fs from 'fs';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { PineconeStore } from '@langchain/pinecone';
-import { OpenAIEmbeddings } from '@langchain/openai';
+import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from '@langchain/core/prompts';
 import {
   DirectoryLoader,
   LoadersMapping,
 } from 'langchain/document_loaders/fs/directory';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
+import { type Runnable } from '@langchain/core/runnables';
 // import { JSONLoader } from 'langchain/document_loaders/fs/json';
+import { createRetrievalChain } from 'langchain/chains/retrieval';
+import { createHistoryAwareRetriever } from 'langchain/chains/history_aware_retriever';
+import { createStuffDocumentsChain } from 'langchain/chains/combine_documents';
+import { DocumentInterface } from '@langchain/core/documents';
 import {
   RecursiveCharacterTextSplitter,
   SupportedTextSplitterLanguage,
   SupportedTextSplitterLanguages,
 } from '@langchain/textsplitters';
 import { sleep, chunkArray } from './common/utils';
+
+export type ReRank = (
+  retrievedDocs: DocumentInterface<Record<string, any>>[],
+) => DocumentInterface<Record<string, any>>[];
 
 // Extend supported languages to include 'txt' and 'json'
 export const SupportedLanguages = [
@@ -25,7 +37,81 @@ export const SupportedLanguages = [
 ] as const;
 export type SupportedLanguage = SupportedTextSplitterLanguage | 'txt' | 'json';
 
+export const DefaultSystemPrompt =
+  'You are an assistant for question-answering tasks. ' +
+  'Use the following pieces of retrieved context to answer ' +
+  "the question. If you don't know the answer, say that you " +
+  "don't know. Use three sentences maximum and keep the " +
+  'answer concise.' +
+  '\n\n' +
+  '{context}';
+
+export const DefaultContextualizeQSystemPrompt =
+  'Given a chat history and the latest user question ' +
+  'which might reference context in the chat history, ' +
+  'formulate a standalone question which can be understood ' +
+  'without the chat history. Do NOT answer the question, ' +
+  'just reformulate it if needed and otherwise return it as is.';
+
 export class LangChainUtils {
+  /**
+   * Creates a chain of runnables for a question-answering system.
+   * @param {PineconeStore} vectorStore - Pinecone vector store to use for retrieving documents.
+   * @param {number} [topK=10] - Number of documents to retrieve from the vector store.
+   * @param {string} openAIApiKey - The API key for OpenAI.
+   * @param {string} [model='gpt-4o'] - The model to use for generating responses.
+   * @param {number} [temperature=0.5] - The temperature to use for generating responses.
+   * @param {string} [systemPrompt=DefaultSystemPrompt] - The prompt to use for generating responses.
+   * @param {string} [contextualizeQSystemPrompt=DefaultContextualizeQSystemPrompt] - The prompt to use for contextualizing questions.
+   * @returns {Promise<Runnable[]>} - The constructed chain of runnables.
+   */
+  static async makeChain(
+    vectorStore: PineconeStore,
+    topK: number = 10,
+    openAIApiKey: string,
+    model: string = 'gpt-4o',
+    temperature: number = 0.5, // increase temepreature to get more creative answers
+    systemPrompt: string = DefaultSystemPrompt,
+    contextualizeQSystemPrompt: string = DefaultContextualizeQSystemPrompt,
+  ): Promise<Runnable[]> {
+    const result = [];
+    const llm = new ChatOpenAI({ openAIApiKey, model, temperature });
+
+    // create a history aware retriever, then push to the result as the first element
+    const rephrasePrompt = ChatPromptTemplate.fromMessages([
+      ['system', contextualizeQSystemPrompt],
+      new MessagesPlaceholder('chat_history'),
+      ['human', '{input}'],
+    ]);
+    const historyAwareRetriever = await createHistoryAwareRetriever({
+      llm,
+      retriever: vectorStore.asRetriever({ k: topK }),
+      rephrasePrompt,
+    });
+    result.push(historyAwareRetriever);
+
+    // create a question answer chain, then push to the result as the second element
+    const prompt = ChatPromptTemplate.fromMessages([
+      ['system', systemPrompt],
+      new MessagesPlaceholder('chat_history'),
+      ['human', '{input}'],
+    ]);
+    const questionAnswerChain = await createStuffDocumentsChain({
+      llm,
+      prompt,
+    });
+    result.push(questionAnswerChain);
+
+    // create a retrieval chain, then push to the result as the third element
+    const chain = await createRetrievalChain({
+      retriever: historyAwareRetriever,
+      combineDocsChain: questionAnswerChain,
+    });
+    result.push(chain);
+
+    return result;
+  }
+
   /**
    * Creates a vector store using Pinecone and OpenAI embeddings.
    * @param {string} pineconeApiKey - The API key for Pinecone.
@@ -39,7 +125,7 @@ export class LangChainUtils {
     pineconeApiKey: string,
     index: string,
     openAIApiKey: string,
-    namespace: string,
+    namespace?: string,
     model: string = 'text-embedding-3-large',
   ): Promise<PineconeStore> {
     // Initialize Pinecone client
