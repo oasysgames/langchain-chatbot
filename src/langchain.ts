@@ -34,8 +34,15 @@ export const SupportedLanguages = [
   ...SupportedTextSplitterLanguages,
   'txt',
   'json',
+  'md',
+  'ts',
 ] as const;
-export type SupportedLanguage = SupportedTextSplitterLanguage | 'txt' | 'json';
+export type SupportedLanguage =
+  | SupportedTextSplitterLanguage
+  | 'txt'
+  | 'json'
+  | 'md'
+  | 'ts';
 
 export const DefaultSystemPrompt =
   'You are an assistant for question-answering tasks. ' +
@@ -54,6 +61,19 @@ export const DefaultContextualizeQSystemPrompt =
   'just reformulate it if needed and otherwise return it as is.';
 
 export class LangChainUtils {
+  /**
+   * Converts a language to a splitter language.
+   * @param language  - The language to convert to file extension.
+   * @returns - The splitter language
+   */
+  static toSplitterLanguage = (
+    language: SupportedLanguage,
+  ): SupportedTextSplitterLanguage => {
+    if (language === 'md') return 'markdown';
+    if (language === 'ts') return 'js';
+    return language as SupportedTextSplitterLanguage;
+  };
+
   /**
    * Creates a chain of runnables for a question-answering system.
    * @param {PineconeStore} vectorStore - Pinecone vector store to use for retrieving documents.
@@ -185,7 +205,7 @@ export class LangChainUtils {
     );
 
     let splitter: RecursiveCharacterTextSplitter;
-    const ext = extension as (typeof SupportedTextSplitterLanguages)[number];
+    const ext = LangChainUtils.toSplitterLanguage(extension);
     if (SupportedTextSplitterLanguages.includes(ext)) {
       splitter = RecursiveCharacterTextSplitter.fromLanguage(ext, {
         chunkSize,
@@ -227,6 +247,7 @@ export class LangChainUtils {
 
       // Split the document into smaller parts
       const splictedDocs = await splitter.splitDocuments([doc]);
+      logger.info(`Split into parts: ${splictedDocs.length}`);
 
       // To avoid adding too many documents at once, we split the splictedDocs into smaller chunks
       const maxSize = 10;
