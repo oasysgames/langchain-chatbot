@@ -1,4 +1,4 @@
-import logger from './common/log';
+import logger from '../common/log';
 import {
   Client,
   Events,
@@ -7,8 +7,8 @@ import {
   DMChannel,
   Message,
 } from 'discord.js';
-import { MutexLockedError } from './common/mutex';
-import { QA } from './qa';
+import { MutexLockedError } from '../common/mutex';
+import { QA } from '../qa';
 
 export class DiscordChatBot {
   private client: Client;

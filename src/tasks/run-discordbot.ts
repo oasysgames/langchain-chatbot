@@ -1,7 +1,7 @@
 import logger from '../common/log'; // Load environment variables from .env file
 import { Command } from 'commander';
 import { QA } from '../qa';
-import { DiscordChatBot } from '../discordbot';
+import { DiscordChatBot } from '../bot/discordbot';
 
 const MaxTopK = 100;
 
