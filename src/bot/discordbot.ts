@@ -71,10 +71,10 @@ export class DiscordChatBot {
           message.reply(response);
         })
         .catch((err: Error) => {
-          // Prompt user to try again if the system is busy
+          // Prompt user to try again if the bot is busy
           if (err instanceof MutexLockedError) {
             message.reply(
-              'The system is currently busy, please try again in a moment.',
+              'Bot is currently busy, please try again in a moment.',
             );
             return;
           }
